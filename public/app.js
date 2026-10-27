@@ -187,14 +187,13 @@
     const section = (title) => {
       const s = el("section", "jk-sec");
       s.append(el("h4", null, title));
-      body.appendChild(s);
       return s;
     };
 
     body.append(el("p", "jokbo-kicker", "엽전 한 닢 족보"), el("h3", "jokbo-title", `조선의 ${t.name} 상세 리포트`));
 
     // 1. 4가지 성향 점수 (scores[i]는 앞 글자를 고른 비율)
-    const s1 = section("4가지 성향 점수");
+    const s1 = section("내 성향, 몇 %나 기울었나");
     AXES.forEach((ax, i) => {
       const mine = code[i];
       const pct = mine === ax.a ? scores[i] : 100 - scores[i];
@@ -211,7 +210,7 @@
     });
 
     // 2. 부캐: 50%에 가장 가까운(덜 뚜렷한) 축을 뒤집은 유형
-    const s2 = section("나의 부캐");
+    const s2 = section("나의 숨은 부캐");
     const flip = (c, i) => c.slice(0, i) + (c[i] === AXES[i].a ? AXES[i].b : AXES[i].a) + c.slice(i + 1);
     const weakest = [0, 1, 2, 3].sort((a, b) => Math.abs(scores[a] - 50) - Math.abs(scores[b] - 50)).slice(0, 2);
     const subs = el("div", "jk-subs");
@@ -227,7 +226,7 @@
     s2.appendChild(subs);
 
     // 3. 상황별 나의 모습
-    const s3 = section("시장 상황별 나의 모습");
+    const s3 = section("그날의 나: 폭락장 · 급등장 · 횡보장");
     const situ = [
       ["폭락장", REPORT.crash[code[0] + code[1]]],
       ["급등장", REPORT.rally[code[1] + code[3]]],
@@ -242,7 +241,7 @@
     s3.appendChild(ul3);
 
     // 4. 내 답으로 보는 근거: 가장 뚜렷한 축 3개에서 내 성향대로 답한 문항 하나씩
-    const s4 = section("내 답으로 보는 성향 근거");
+    const s4 = section("소름 주의: 내 답이 말해주는 진짜 나");
     const strongest = [0, 1, 2, 3].sort((a, b) => Math.abs(scores[b] - 50) - Math.abs(scores[a] - 50)).slice(0, 3);
     for (const i of strongest) {
       const ax = AXES[i];
@@ -260,7 +259,7 @@
     }
 
     // 5. 16유형 전체 궁합표
-    const s5 = section("16유형 궁합표");
+    const s5 = section("16유형 궁합표: 누구랑 같이 투자할까");
     const LABEL = { 2: "찰떡", 1: "잘 맞음", 0: "무난", "-1": "삐걱", "-2": "최악" };
     const grid = el("div", "jk-grid");
     Object.keys(TYPES)
@@ -275,12 +274,14 @@
     s5.appendChild(grid);
 
     // 6. 나만의 매매 점검표
-    const s6 = section("나만의 매매 점검표");
+    const s6 = section("나만을 위한 매매 점검표");
     const ul6 = el("ul", "jk-check");
     [...code].forEach((ch) => ul6.appendChild(el("li", null, REPORT.check[ch])));
     ul6.appendChild(el("li", null, t.tip));
     s6.appendChild(ul6);
 
+    // 흥미 순서: 부캐 → 궁합표 → 상황별 → 점수 → 내 답 → 점검표
+    body.append(s2, s5, s3, s1, s4, s6);
     $("jokbo-lock").classList.add("hidden");
     body.classList.remove("hidden");
   }

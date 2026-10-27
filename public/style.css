@@ -465,9 +465,12 @@ footer .credit { font-size: 13px; color: var(--ink); margin-bottom: 10px; }
   padding: 22px 20px;
 }
 .jokbo-kicker { margin: 0; font-size: 13px; font-weight: 800; color: var(--red); letter-spacing: 0.04em; }
-.jokbo-title { margin: 4px 0 14px; font-family: var(--serif); font-weight: 700; font-size: 22px; }
-.jokbo-list { margin: 0 0 18px; padding: 0; list-style: none; display: grid; gap: 8px; }
-.jokbo-list li { font-size: 15px; font-weight: 600; padding-left: 26px; position: relative; }
+.jokbo-title { margin: 4px 0 6px; font-family: var(--serif); font-weight: 700; font-size: 22px; }
+.jokbo-sub { margin: 0 0 16px; font-size: 14px; color: var(--muted); }
+.jokbo-sub b { color: var(--red); }
+.jokbo-list { margin: 0 0 18px; padding: 0; list-style: none; display: grid; gap: 10px; }
+.jokbo-list li { font-size: 14px; line-height: 1.5; color: var(--muted); padding-left: 26px; position: relative; }
+.jokbo-list li b { display: block; font-size: 15px; font-weight: 800; color: var(--ink); }
 .jokbo-list li::before { content: "🔒"; position: absolute; left: 0; font-size: 14px; }
 .jokbo-note { margin: 10px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
 
@@ -508,3 +511,5 @@ footer .credit { font-size: 13px; color: var(--ink); margin-bottom: 10px; }
 .jk-check { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .jk-check li { position: relative; padding-left: 28px; font-size: 14px; line-height: 1.55; font-weight: 600; }
 .jk-check li::before { content: ""; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; border: 2px solid var(--ink); border-radius: 4px; background: #fff; }
+.hidden { display: none !important; }
+#btn-unlock { font-size: 16px; padding: 14px 10px; }
