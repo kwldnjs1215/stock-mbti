@@ -223,6 +223,11 @@
   }
   renderHero();
 
+  // 문의 메일: 페이지 원본에 주소를 그대로 두지 않아 스팸 수집을 줄인다
+  const mail = ["mbti.lab.kr", "gmail.com"].join("@");
+  $("contact-mail").href = `mailto:${mail}`;
+  $("contact-mail").textContent = mail;
+
   // 공유 링크로 들어온 경우 (?t=mangnani)
   const shared = codeFromUrl();
   if (shared) renderResult(shared, null, "");

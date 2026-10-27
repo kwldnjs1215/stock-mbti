@@ -440,8 +440,12 @@ footer {
   text-align: center;
   color: var(--muted);
   font-size: 12px;
-  padding: 0 16px 32px;
+  padding: 8px 16px 32px;
 }
+footer p { margin: 0 0 6px; }
+footer a { color: var(--ink); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+footer .credit { font-size: 13px; color: var(--ink); }
+footer .more { margin-bottom: 12px; }
 
 @media (max-width: 360px) {
   h1 { font-size: 70px; }
