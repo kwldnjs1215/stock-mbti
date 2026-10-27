@@ -64,6 +64,10 @@
       const { code, scores } = calculate();
       state.done = true;
       setTimeout(() => {
+        // 새로고침해도 내 결과(점수·답)를 다시 보여줄 수 있게 이 브라우저에만 보관
+        try {
+          sessionStorage.setItem("lastResult", JSON.stringify({ code, scores, name: state.name, answers: state.answers }));
+        } catch {}
         renderResult(code, scores, state.name);
         saveResult(state.name, code, scores);
         history.replaceState(null, "", `?t=${SLUGS[code]}`);
@@ -152,7 +156,133 @@
 
     $("btn-retry").textContent = scores ? "다시 하기" : "나도 테스트하기";
     state.shown = { code, name };
+    setupJokbo(code, scores);
     show("screen-result");
+  }
+
+  // ---------- 엽전 한 닢 족보 (상세 리포트) ----------
+  // 결제가 붙기 전까지는 잠겨 있고, 주소 끝에 #preview-report 를 붙이면 미리보기로 열린다
+  function setupJokbo(code, scores) {
+    $("jokbo-body").classList.add("hidden");
+    $("jokbo-lock").classList.remove("hidden");
+    const own = Boolean(scores) && state.answers.length === QUESTIONS.length;
+    $("btn-unlock").textContent = own ? "🪙 엽전 한 닢으로 열기 · 1,000원" : "직접 테스트하고 내 족보 보기";
+    $("jokbo-note").textContent = own ? "결제 기능은 준비 중이에요" : "족보는 테스트를 직접 한 사람만 볼 수 있어요";
+    $("btn-unlock").onclick = () => {
+      if (!own) {
+        history.replaceState(null, "", location.pathname);
+        show("screen-intro");
+        return;
+      }
+      if (location.hash === "#preview-report") openJokbo(code, scores);
+      else toast("결제 기능은 준비 중이에요. 곧 열려요!");
+    };
+    if (own && location.hash === "#preview-report") openJokbo(code, scores);
+  }
+
+  function openJokbo(code, scores) {
+    const t = TYPES[code];
+    const body = $("jokbo-body");
+    body.innerHTML = "";
+    const section = (title) => {
+      const s = el("section", "jk-sec");
+      s.append(el("h4", null, title));
+      body.appendChild(s);
+      return s;
+    };
+
+    body.append(el("p", "jokbo-kicker", "엽전 한 닢 족보"), el("h3", "jokbo-title", `조선의 ${t.name} 상세 리포트`));
+
+    // 1. 4가지 성향 점수 (scores[i]는 앞 글자를 고른 비율)
+    const s1 = section("4가지 성향 점수");
+    AXES.forEach((ax, i) => {
+      const mine = code[i];
+      const pct = mine === ax.a ? scores[i] : 100 - scores[i];
+      const level = pct >= 100 ? "이 성향이 아주 뚜렷해요" : pct >= 80 ? "이 성향이 뚜렷해요" : "이쪽으로 살짝 기울어 있어요";
+      const row = el("div", "jk-axis");
+      const head = el("div", "jk-axis-head");
+      head.append(el("span", null, `${ax.aName} ${scores[i]}%`), el("span", null, `${100 - scores[i]}% ${ax.bName}`));
+      const bar = el("div", "jk-bar");
+      const fill = el("i");
+      fill.style.width = `${scores[i]}%`;
+      bar.appendChild(fill);
+      row.append(head, bar, el("p", null, `${REPORT.lean[mine]}이에요. ${level}.`));
+      s1.appendChild(row);
+    });
+
+    // 2. 부캐: 50%에 가장 가까운(덜 뚜렷한) 축을 뒤집은 유형
+    const s2 = section("나의 부캐");
+    const flip = (c, i) => c.slice(0, i) + (c[i] === AXES[i].a ? AXES[i].b : AXES[i].a) + c.slice(i + 1);
+    const weakest = [0, 1, 2, 3].sort((a, b) => Math.abs(scores[a] - 50) - Math.abs(scores[b] - 50)).slice(0, 2);
+    const subs = el("div", "jk-subs");
+    for (const i of weakest) {
+      const other = flip(code, i);
+      const ax = AXES[i];
+      const otherName = other[i] === ax.a ? ax.aName : ax.bName;
+      const card = el("div", "jk-sub");
+      card.innerHTML = antSVG(other);
+      card.append(el("b", null, TYPES[other].name), el("span", null, `${otherName} 쪽이 조금만 강했다면`), el("q", null, TYPES[other].quote));
+      subs.appendChild(card);
+    }
+    s2.appendChild(subs);
+
+    // 3. 상황별 나의 모습
+    const s3 = section("시장 상황별 나의 모습");
+    const situ = [
+      ["폭락장", REPORT.crash[code[0] + code[1]]],
+      ["급등장", REPORT.rally[code[1] + code[3]]],
+      ["횡보장", REPORT.flat[code[1] + code[2]]],
+    ];
+    const ul3 = el("ul", "jk-situ");
+    for (const [k, v] of situ) {
+      const li = el("li");
+      li.append(el("b", null, k), el("span", null, v));
+      ul3.appendChild(li);
+    }
+    s3.appendChild(ul3);
+
+    // 4. 내 답으로 보는 근거: 가장 뚜렷한 축 3개에서 내 성향대로 답한 문항 하나씩
+    const s4 = section("내 답으로 보는 성향 근거");
+    const strongest = [0, 1, 2, 3].sort((a, b) => Math.abs(scores[b] - 50) - Math.abs(scores[a] - 50)).slice(0, 3);
+    for (const i of strongest) {
+      const ax = AXES[i];
+      const choice = code[i] === ax.a ? "A" : "B";
+      const qi = QUESTIONS.findIndex((q, n) => q.axis === i && state.answers[n] === choice);
+      if (qi < 0) continue;
+      const q = QUESTIONS[qi];
+      const box = el("div", "jk-ans");
+      box.append(
+        el("p", "jk-q", `Q${qi + 1}. ${q.q}`),
+        el("p", "jk-a", `“${q[choice]}”`),
+        el("p", "jk-why", `${choice === "A" ? ax.aName : ax.bName}이 드러난 답이에요.`)
+      );
+      s4.appendChild(box);
+    }
+
+    // 5. 16유형 전체 궁합표
+    const s5 = section("16유형 궁합표");
+    const LABEL = { 2: "찰떡", 1: "잘 맞음", 0: "무난", "-1": "삐걱", "-2": "최악" };
+    const grid = el("div", "jk-grid");
+    Object.keys(TYPES)
+      .filter((c) => c !== code)
+      .map((c) => [c, matchScore(code, c)])
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([c, sc]) => {
+        const cell = el("div", `jk-cell s${sc < 0 ? "m" + -sc : sc}`);
+        cell.append(el("b", null, TYPES[c].name), el("span", null, LABEL[sc]));
+        grid.appendChild(cell);
+      });
+    s5.appendChild(grid);
+
+    // 6. 나만의 매매 점검표
+    const s6 = section("나만의 매매 점검표");
+    const ul6 = el("ul", "jk-check");
+    [...code].forEach((ch) => ul6.appendChild(el("li", null, REPORT.check[ch])));
+    ul6.appendChild(el("li", null, t.tip));
+    s6.appendChild(ul6);
+
+    $("jokbo-lock").classList.add("hidden");
+    body.classList.remove("hidden");
   }
 
   // 이름 + 결과를 서버(Cloudflare D1)에 저장. 실패해도 화면엔 영향 없음
@@ -523,5 +653,14 @@
 
   // 공유 링크로 들어온 경우 (?t=mangnani)
   const shared = codeFromUrl();
-  if (shared) renderResult(shared, null, "");
+  if (shared) {
+    let mine = null;
+    try { mine = JSON.parse(sessionStorage.getItem("lastResult")); } catch {}
+    if (mine && mine.code === shared) {
+      state.answers = mine.answers;
+      renderResult(shared, mine.scores, mine.name);
+    } else {
+      renderResult(shared, null, "");
+    }
+  }
 })();

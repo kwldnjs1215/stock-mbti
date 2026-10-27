@@ -12,7 +12,7 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&display=swap">
-  <link rel="stylesheet" href="style.css?v=26">
+  <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
   <main id="app">
@@ -117,6 +117,25 @@
         <article class="match bad" id="match-bad"></article>
       </div>
 
+      <!-- 엽전 한 닢 상세 리포트: 잠금 안내 → 결제하면 아래 리포트가 열린다 -->
+      <section class="jokbo" id="jokbo">
+        <div class="jokbo-lock" id="jokbo-lock">
+          <p class="jokbo-kicker">엽전 한 닢 족보</p>
+          <h3 class="jokbo-title">나만 보는 상세 성향 리포트</h3>
+          <ul class="jokbo-list">
+            <li>4가지 성향 점수와 해설</li>
+            <li>나의 부캐 유형 2개</li>
+            <li>폭락장 · 급등장 · 횡보장에서의 나</li>
+            <li>내 답으로 보는 성향 근거</li>
+            <li>16유형 전체 궁합표</li>
+            <li>나만의 매매 점검표</li>
+          </ul>
+          <button class="btn primary" id="btn-unlock">🪙 엽전 한 닢으로 열기 · 1,000원</button>
+          <p class="jokbo-note" id="jokbo-note"></p>
+        </div>
+        <div class="jokbo-body hidden" id="jokbo-body"></div>
+      </section>
+
       <div class="actions">
         <button class="btn primary" id="btn-share">결과 공유하기</button>
         <div class="actions-row">
@@ -135,8 +154,8 @@
     <p>재미로 보는 성향 테스트예요 · 투자 판단과 책임은 본인에게 있습니다</p>
   </footer>
 
-  <script src="data.js?v=26"></script>
-  <script src="characters.js?v=26"></script>
-  <script src="app.js?v=26"></script>
+  <script src="data.js?v=28"></script>
+  <script src="characters.js?v=28"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>
