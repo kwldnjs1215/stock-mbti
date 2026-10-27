@@ -20,32 +20,32 @@ wrangler.toml           Pages + D1 설정
 2. D1 데이터베이스 만들기. 출력되는 `database_id`를 `wrangler.toml`에 붙여넣습니다.
 
    ```bash
-   npx wrangler d1 create donghak-mbti
+   npx wrangler d1 create stock-mbti
    ```
 
 3. 테이블 만들기 (배포용 원격 DB)
 
    ```bash
-   npx wrangler d1 execute donghak-mbti --remote --file=schema.sql
+   npx wrangler d1 execute stock-mbti --remote --file=schema.sql
    ```
 
 4. Pages 프로젝트 만들고 배포
 
    ```bash
-   npx wrangler pages project create donghak-mbti --production-branch=main
+   npx wrangler pages project create stock-mbti --production-branch=main
    ```
 
    ```bash
    npx wrangler pages deploy
    ```
 
-   배포가 끝나면 `https://donghak-mbti.pages.dev` 같은 주소가 나옵니다.
+   배포가 끝나면 `https://stock-mbti.pages.dev` 같은 주소가 나옵니다.
    `wrangler.toml`의 D1 설정이 Pages 프로젝트에 같이 적용됩니다.
 
 ## 로컬에서 API까지 같이 돌려보기
 
 ```bash
-npx wrangler d1 execute donghak-mbti --local --file=schema.sql
+npx wrangler d1 execute stock-mbti --local --file=schema.sql
 ```
 
 ```bash
@@ -55,11 +55,11 @@ npx wrangler pages dev
 ## 저장된 결과 보기
 
 ```bash
-npx wrangler d1 execute donghak-mbti --remote --command="SELECT type, COUNT(*) AS n FROM results GROUP BY type ORDER BY n DESC"
+npx wrangler d1 execute stock-mbti --remote --command="SELECT type, COUNT(*) AS n FROM results GROUP BY type ORDER BY n DESC"
 ```
 
 ```bash
-npx wrangler d1 execute donghak-mbti --remote --command="SELECT name, type, created_at FROM results ORDER BY id DESC LIMIT 20"
+npx wrangler d1 execute stock-mbti --remote --command="SELECT name, type, created_at FROM results ORDER BY id DESC LIMIT 20"
 ```
 
 > 문항 수를 바꾸면 `functions/api/results.js`의 `ANSWERS_RE`(지금은 20글자)도 같이 바꿔주세요.
