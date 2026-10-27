@@ -151,6 +151,7 @@
     renderMatch("match-bad", "worst", code);
 
     $("btn-retry").textContent = scores ? "다시 하기" : "나도 테스트하기";
+    state.shown = { code, name };
     show("screen-result");
   }
 
@@ -169,11 +170,25 @@
     return Object.keys(SLUGS).find((c) => SLUGS[c] === slug) || null;
   }
 
-  async function share() {
-    const code = codeFromUrl();
-    const t = TYPES[code];
+  function shareInfo() {
+    const { code } = state.shown;
     const url = `${location.origin}${location.pathname}?t=${SLUGS[code]}`;
-    const text = `나는 조선의 ${t.name}! 너는 어떤 개미야?`;
+    const text = `나는 조선의 ${TYPES[code].name}! 너는 어떤 개미야?`;
+    return { url, text };
+  }
+
+  async function copyLink() {
+    const { url, text } = shareInfo();
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      toast("링크가 복사됐어요! 단톡방에 붙여넣기");
+    } catch {
+      prompt("아래 링크를 복사하세요", url);
+    }
+  }
+
+  async function share() {
+    const { url, text } = shareInfo();
     if (navigator.share) {
       try {
         await navigator.share({ title: "동학개미 MBTI", text, url });
@@ -182,11 +197,151 @@
         if (e.name === "AbortError") return;
       }
     }
+    copyLink();
+  }
+
+  // ---------- 이미지로 저장: 1080×1350 공유 카드를 캔버스에 직접 그린다 ----------
+  function loadSvg(markup) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(markup);
+    });
+  }
+
+  // 정해진 폭을 넘으면 글자 크기를 줄인다
+  function fitText(ctx, text, maxWidth, size, family, weight = "400") {
+    let s = size;
+    do {
+      ctx.font = `${weight} ${s}px ${family}`;
+      if (ctx.measureText(text).width <= maxWidth) break;
+      s -= 4;
+    } while (s > 20);
+    return s;
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  async function drawCard() {
+    const { code, name } = state.shown;
+    const t = TYPES[code];
+    const W = 1080, H = 1350;
+    const brush = '"Nanum Brush Script", serif';
+    const serif = '"Gowun Batang", serif';
+    await Promise.all([
+      document.fonts.load(`400 120px "Nanum Brush Script"`),
+      document.fonts.load(`700 40px "Gowun Batang"`),
+    ]).catch(() => {});
+
+    const cv = document.createElement("canvas");
+    cv.width = W;
+    cv.height = H;
+    const ctx = cv.getContext("2d");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+
+    // 바탕(한지)과 방 종이
+    ctx.fillStyle = "#f1e6cc";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#1d1a16";
+    roundRect(ctx, 76, 96, 940, 1180, 14);
+    ctx.fill();
+    ctx.fillStyle = "#fbf4e2";
+    ctx.strokeStyle = "#1d1a16";
+    ctx.lineWidth = 8;
+    roundRect(ctx, 60, 80, 940, 1180, 14);
+    ctx.fill();
+    ctx.stroke();
+    // 위아래 나무 막대
+    ctx.fillStyle = "#6b4423";
+    for (const y of [60, 1240]) {
+      roundRect(ctx, 36, y, 1008, 40, 20);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = "#1d1a16";
+    ctx.font = `700 40px ${serif}`;
+    ctx.fillText("동학개미 MBTI", W / 2, 170);
+
+    // 캐릭터
+    ctx.fillStyle = ANTS[code].color;
+    ctx.beginPath();
+    ctx.arc(W / 2, 450, 230, 0, Math.PI * 2);
+    ctx.fill();
+    const ant = await loadSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="480" height="480">${antInner(code)}</svg>`);
+    ctx.drawImage(ant, W / 2 - 240, 210, 480, 480);
+
+    // 누구 / 조선의 ○○
+    ctx.fillStyle = "#4a4232";
+    ctx.font = `700 40px ${serif}`;
+    ctx.fillText(name ? `${name}님은` : "나는", W / 2, 770);
+    ctx.fillStyle = "#1d1a16";
+    const prefix = "조선의 ";
+    const size = fitText(ctx, prefix + t.name, 820, 150, brush);
+    ctx.font = `400 ${Math.round(size * 0.55)}px ${brush}`;
+    const pw = ctx.measureText(prefix).width;
+    ctx.font = `400 ${size}px ${brush}`;
+    const nw = ctx.measureText(t.name).width;
+    const left = W / 2 - (pw + nw) / 2;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#6e6250";
+    ctx.font = `400 ${Math.round(size * 0.55)}px ${brush}`;
+    ctx.fillText(prefix, left, 910);
+    ctx.fillStyle = "#1d1a16";
+    ctx.font = `400 ${size}px ${brush}`;
+    ctx.fillText(t.name, left + pw, 910);
+    ctx.textAlign = "center";
+
+    // 제일 많이 하는 말
+    ctx.fillStyle = "#fffaf0";
+    ctx.lineWidth = 5;
+    roundRect(ctx, 140, 960, 800, 120, 24);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#1d1a16";
+    const q = `“${t.quote}”`;
+    const qs = fitText(ctx, q, 740, 44, serif, "700");
+    ctx.font = `700 ${qs}px ${serif}`;
+    ctx.fillText(q, W / 2, 1035);
+
+    // 투자 스타일 + 주소
+    ctx.fillStyle = "#b8322a";
+    ctx.font = `700 36px ${serif}`;
+    ctx.fillText(`투자 스타일 · ${t.style}`, W / 2, 1140);
+    ctx.fillStyle = "#6e6250";
+    ctx.font = `400 30px ${serif}`;
+    ctx.fillText(`나도 해보기 → ${location.host}`, W / 2, 1200);
+
+    return new Promise((resolve) => cv.toBlob(resolve, "image/png"));
+  }
+
+  async function saveImage() {
+    const btn = $("btn-image");
+    btn.disabled = true;
     try {
-      await navigator.clipboard.writeText(`${text}\n${url}`);
-      toast("링크가 복사됐어요! 단톡방에 붙여넣기");
+      const blob = await drawCard();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `동학개미MBTI_${TYPES[state.shown.code].name.replace(/\s+/g, "")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      toast("이미지를 저장했어요!");
     } catch {
-      prompt("아래 링크를 복사하세요", url);
+      toast("이미지를 만들지 못했어요. 다시 시도해 주세요");
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -201,6 +356,8 @@
   $("opt-1").onclick = () => answer($("opt-1").dataset.choice);
   $("btn-back").onclick = goBack;
   $("btn-share").onclick = share;
+  $("btn-copy").onclick = copyLink;
+  $("btn-image").onclick = saveImage;
   $("btn-retry").onclick = () => {
     history.replaceState(null, "", location.pathname);
     show("screen-intro");

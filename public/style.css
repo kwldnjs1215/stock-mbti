@@ -414,6 +414,9 @@ h1 {
 .bad li::before { color: var(--blue); }
 
 .actions { display: grid; gap: 12px; margin-top: 28px; }
+.actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions-row .btn { font-size: 16px; padding: 13px 8px; }
+.btn:disabled { opacity: 0.6; cursor: wait; }
 
 /* ---------- 기타 ---------- */
 .toast {
