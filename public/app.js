@@ -231,96 +231,232 @@
     ctx.closePath();
   }
 
+  // 줄바꿈: 띄어쓰기 단위로 넘기고, 한 단어가 너무 길면 글자 단위로 자른다
+  function wrap(ctx, text, maxWidth) {
+    const lines = [];
+    let line = "";
+    for (const word of text.split(" ")) {
+      const next = line ? `${line} ${word}` : word;
+      if (ctx.measureText(next).width <= maxWidth) { line = next; continue; }
+      if (line) lines.push(line);
+      line = "";
+      for (const ch of word) {
+        if (ctx.measureText(line + ch).width > maxWidth) { lines.push(line); line = ""; }
+        line += ch;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  // 세로로 긴 결과 카드. 내용 높이에 맞춰 캔버스 길이가 정해진다
   async function drawCard() {
     const { code, name } = state.shown;
     const t = TYPES[code];
-    const W = 1080, H = 1350;
+    const C = {
+      ink: "#1d1a16", muted: "#6e6250", body: "#2f2a20", red: "#b8322a", blue: "#2f4a7a", gold: "#f2c14e",
+      paper: "#fbf4e2", cream: "#fffaf0", redSoft: "#f6dcd3", blueSoft: "#dbe3ef", hanji: "#f1e6cc", wood: "#6b4423",
+    };
     const brush = '"Nanum Brush Script", serif';
     const serif = '"Gowun Batang", serif';
+    const sans = '"Pretendard Variable", Pretendard, sans-serif';
     await Promise.all([
       document.fonts.load(`400 120px "Nanum Brush Script"`),
       document.fonts.load(`700 40px "Gowun Batang"`),
+      document.fonts.load(`600 32px "Pretendard Variable"`),
     ]).catch(() => {});
 
+    const W = 1080, X = 120, CW = 840;
+    const tmp = document.createElement("canvas");
+    tmp.width = W;
+    tmp.height = 7000;
+    const c = tmp.getContext("2d");
+    c.textBaseline = "alphabetic";
+    let y = 170;
+
+    // 머리글 + 캐릭터
+    c.textAlign = "center";
+    c.fillStyle = C.ink;
+    c.font = `700 40px ${serif}`;
+    c.fillText("동학개미 투자 성향", W / 2, y);
+    y += 40;
+    c.fillStyle = ANTS[code].color;
+    c.beginPath();
+    c.arc(W / 2, y + 230, 220, 0, Math.PI * 2);
+    c.fill();
+    const ant = await loadSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="460" height="460">${antInner(code)}</svg>`);
+    c.drawImage(ant, W / 2 - 230, y, 460, 460);
+    y += 520;
+
+    // ○○님은 / 조선의 ○○
+    c.fillStyle = "#4a4232";
+    c.font = `700 38px ${serif}`;
+    c.fillText(name ? `${name}님은` : "이 개미는", W / 2, y);
+    y += 140;
+    const prefix = "조선의 ";
+    const size = fitText(c, prefix + t.name, 820, 150, brush);
+    const small = Math.round(size * 0.55);
+    c.font = `400 ${small}px ${brush}`;
+    const pw = c.measureText(prefix).width;
+    c.font = `400 ${size}px ${brush}`;
+    const nw = c.measureText(t.name).width;
+    const left = W / 2 - (pw + nw) / 2;
+    c.textAlign = "left";
+    c.fillStyle = C.muted;
+    c.font = `400 ${small}px ${brush}`;
+    c.fillText(prefix, left, y);
+    c.fillStyle = C.ink;
+    c.font = `400 ${size}px ${brush}`;
+    c.fillText(t.name, left + pw, y);
+    y += 70;
+
+    // 제일 많이 하는 말
+    c.font = `700 44px ${serif}`;
+    const qLines = wrap(c, t.quote, CW - 80);
+    const qh = 80 + qLines.length * 62 + 30;
+    c.fillStyle = C.cream;
+    c.strokeStyle = C.ink;
+    c.lineWidth = 5;
+    roundRect(c, X, y, CW, qh, 26);
+    c.fill();
+    c.stroke();
+    c.fillStyle = C.muted;
+    c.font = `700 26px ${sans}`;
+    c.fillText("제일 많이 하는 말", X + 40, y + 52);
+    c.fillStyle = C.ink;
+    c.font = `700 44px ${serif}`;
+    qLines.forEach((l, i) => c.fillText(l, X + 40, y + 112 + i * 62));
+    y += qh + 60;
+
+    // 설명
+    c.fillStyle = C.body;
+    c.font = `500 32px ${sans}`;
+    for (const l of wrap(c, t.desc, CW)) { c.fillText(l, X, y); y += 54; }
+    y += 50;
+
+    // 강점 / 주의할 점: 카드 위에 이름표
+    for (const [label, color, text] of [["○ 강점", C.blue, t.strength], ["△ 주의할 점", C.red, t.caution]]) {
+      c.font = `600 32px ${sans}`;
+      const lines = wrap(c, text, CW - 64);
+      const h = 50 + lines.length * 52 + 22;
+      const top = y + 24;
+      c.fillStyle = C.paper;
+      c.strokeStyle = C.ink;
+      c.lineWidth = 5;
+      roundRect(c, X, top, CW, h, 22);
+      c.fill();
+      c.stroke();
+      c.font = `800 26px ${sans}`;
+      const tw = c.measureText(label).width + 44;
+      c.fillStyle = color;
+      roundRect(c, X + 28, y, tw, 48, 24);
+      c.fill();
+      c.lineWidth = 4;
+      c.stroke();
+      c.fillStyle = "#fff8e6";
+      c.fillText(label, X + 50, y + 34);
+      c.fillStyle = C.ink;
+      c.font = `600 32px ${sans}`;
+      lines.forEach((l, i) => c.fillText(l, X + 32, top + 74 + i * 52));
+      y = top + h + 36;
+    }
+
+    // 이렇게 해 보세요: 먹색 강조 박스
+    c.font = `600 34px ${sans}`;
+    const tLines = wrap(c, t.tip, CW - 72);
+    const th = 88 + tLines.length * 56 + 30;
+    c.fillStyle = C.red;
+    roundRect(c, X + 8, y + 8, CW, th, 22);
+    c.fill();
+    c.fillStyle = C.ink;
+    roundRect(c, X, y, CW, th, 22);
+    c.fill();
+    c.fillStyle = C.gold;
+    c.font = `800 28px ${sans}`;
+    c.fillText("이렇게 해 보세요", X + 36, y + 58);
+    c.fillStyle = "#fff8e6";
+    c.font = `600 34px ${sans}`;
+    tLines.forEach((l, i) => c.fillText(l, X + 36, y + 116 + i * 56));
+    y += th + 110;
+
+    // 같이 투자하면?
+    c.textAlign = "center";
+    c.fillStyle = C.ink;
+    c.font = `400 84px ${brush}`;
+    c.fillText("같이 투자하면?", W / 2, y);
+    y += 50;
+    c.textAlign = "left";
+    const pairs = [
+      ["▲ 찰떡 궁합", C.red, C.redSoft, t.best, "같이 투자하면 서로 빈틈을 채워주는 사이", t.bestScene],
+      ["▼ 최악 궁합", C.blue, C.blueSoft, t.worst, "같이 투자하면 서로 속 터지는 사이", t.worstScene],
+    ];
+    for (const [kicker, color, bg, other, line, scene] of pairs) {
+      const cx = X - 20, cw = CW + 40, pad = 40;
+      c.font = `600 30px ${sans}`;
+      const sLines = wrap(c, scene, cw - pad * 2 - 48);
+      const sh = 36 + sLines.length * 48 + 20;
+      const h = 262 + sh + pad;
+      c.fillStyle = C.ink;
+      roundRect(c, cx + 8, y + 8, cw, h, 26);
+      c.fill();
+      c.fillStyle = bg;
+      c.strokeStyle = C.ink;
+      c.lineWidth = 5;
+      roundRect(c, cx, y, cw, h, 26);
+      c.fill();
+      c.stroke();
+      const mini = await loadSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="180" height="180">${antInner(other)}</svg>`);
+      c.drawImage(mini, cx + cw - 200, y + 14, 180, 180);
+      c.font = `800 26px ${sans}`;
+      const kw = c.measureText(kicker).width + 36;
+      c.fillStyle = color;
+      roundRect(c, cx + pad, y + pad, kw, 46, 10);
+      c.fill();
+      c.fillStyle = "#fff8e6";
+      c.fillText(kicker, cx + pad + 18, y + pad + 33);
+      c.fillStyle = C.ink;
+      const ns = fitText(c, TYPES[other].name, cw - pad * 2 - 200, 76, brush);
+      c.font = `400 ${ns}px ${brush}`;
+      c.fillText(TYPES[other].name, cx + pad, y + 170);
+      c.fillStyle = "#3f3a30";
+      c.font = `500 28px ${sans}`;
+      c.fillText(line, cx + pad, y + 232);
+      const sy = y + 262;
+      c.fillStyle = C.cream;
+      c.lineWidth = 4;
+      roundRect(c, cx + pad, sy, cw - pad * 2, sh, 18);
+      c.fill();
+      c.stroke();
+      c.fillStyle = C.ink;
+      c.font = `600 30px ${sans}`;
+      sLines.forEach((l, i) => c.fillText(l, cx + pad + 24, sy + 54 + i * 48));
+      y += h + 44;
+    }
+
+    // 최종 캔버스: 바탕 → 방 종이 → 내용 → 위아래 나무 막대
+    const H = y + 130;
     const cv = document.createElement("canvas");
     cv.width = W;
     cv.height = H;
     const ctx = cv.getContext("2d");
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-
-    // 바탕(한지)과 방 종이
-    ctx.fillStyle = "#f1e6cc";
+    ctx.fillStyle = C.hanji;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = "#1d1a16";
-    roundRect(ctx, 76, 96, 940, 1180, 14);
+    ctx.fillStyle = C.ink;
+    roundRect(ctx, 76, 96, 940, H - 176, 14);
     ctx.fill();
-    ctx.fillStyle = "#fbf4e2";
-    ctx.strokeStyle = "#1d1a16";
+    ctx.fillStyle = C.paper;
+    ctx.strokeStyle = C.ink;
     ctx.lineWidth = 8;
-    roundRect(ctx, 60, 80, 940, 1180, 14);
+    roundRect(ctx, 60, 80, 940, H - 176, 14);
     ctx.fill();
     ctx.stroke();
-    // 위아래 나무 막대
-    ctx.fillStyle = "#6b4423";
-    for (const y of [60, 1240]) {
-      roundRect(ctx, 36, y, 1008, 40, 20);
+    ctx.drawImage(tmp, 0, 0, W, H, 0, 0, W, H);
+    ctx.fillStyle = C.wood;
+    for (const by of [60, H - 116]) {
+      roundRect(ctx, 36, by, 1008, 40, 20);
       ctx.fill();
       ctx.stroke();
     }
-
-    ctx.fillStyle = "#1d1a16";
-    ctx.font = `700 40px ${serif}`;
-    ctx.fillText("동학개미 MBTI", W / 2, 170);
-
-    // 캐릭터
-    ctx.fillStyle = ANTS[code].color;
-    ctx.beginPath();
-    ctx.arc(W / 2, 450, 230, 0, Math.PI * 2);
-    ctx.fill();
-    const ant = await loadSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="480" height="480">${antInner(code)}</svg>`);
-    ctx.drawImage(ant, W / 2 - 240, 210, 480, 480);
-
-    // 누구 / 조선의 ○○
-    ctx.fillStyle = "#4a4232";
-    ctx.font = `700 40px ${serif}`;
-    ctx.fillText(name ? `${name}님은` : "나는", W / 2, 770);
-    ctx.fillStyle = "#1d1a16";
-    const prefix = "조선의 ";
-    const size = fitText(ctx, prefix + t.name, 820, 150, brush);
-    ctx.font = `400 ${Math.round(size * 0.55)}px ${brush}`;
-    const pw = ctx.measureText(prefix).width;
-    ctx.font = `400 ${size}px ${brush}`;
-    const nw = ctx.measureText(t.name).width;
-    const left = W / 2 - (pw + nw) / 2;
-    ctx.textAlign = "left";
-    ctx.fillStyle = "#6e6250";
-    ctx.font = `400 ${Math.round(size * 0.55)}px ${brush}`;
-    ctx.fillText(prefix, left, 910);
-    ctx.fillStyle = "#1d1a16";
-    ctx.font = `400 ${size}px ${brush}`;
-    ctx.fillText(t.name, left + pw, 910);
-    ctx.textAlign = "center";
-
-    // 제일 많이 하는 말
-    ctx.fillStyle = "#fffaf0";
-    ctx.lineWidth = 5;
-    roundRect(ctx, 140, 960, 800, 120, 24);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#1d1a16";
-    const q = `“${t.quote}”`;
-    const qs = fitText(ctx, q, 740, 44, serif, "700");
-    ctx.font = `700 ${qs}px ${serif}`;
-    ctx.fillText(q, W / 2, 1035);
-
-    // 투자 스타일 + 주소
-    ctx.fillStyle = "#b8322a";
-    ctx.font = `700 36px ${serif}`;
-    ctx.fillText(`투자 스타일 · ${t.style}`, W / 2, 1140);
-    ctx.fillStyle = "#6e6250";
-    ctx.font = `400 30px ${serif}`;
-    ctx.fillText(`나도 해보기 → ${location.host}`, W / 2, 1200);
 
     return new Promise((resolve) => cv.toBlob(resolve, "image/png"));
   }
