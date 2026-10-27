@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>동학개미 MBTI · 조선에 태어났다면 나는?</title>
+  <meta name="description" content="20문항으로 알아보는 나의 투자 성향. 조선에 태어났다면 나는 어떤 개미였을까?">
+  <meta property="og:title" content="동학개미 MBTI · 조선에 태어났다면 나는?">
+  <meta property="og:description" content="나의 투자 습관으로 알아보는 16가지 조선 개미">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#f1e6cc">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Nanum+Brush+Script&display=swap">
+  <link rel="stylesheet" href="style.css?v=19">
+</head>
+<body>
+  <main id="app">
+    <!-- 시작 화면 -->
+    <section id="screen-intro" class="screen active">
+      <div class="badge">동학개미 투자 성향 테스트</div>
+      <h1>동학개미 <span class="hl">MBTI</span></h1>
+      <p class="lead"><b>조선에 태어났다면</b>, 나는 어떤 개미였을까?</p>
+
+      <div id="hero"></div>
+
+      <form id="name-form" class="card">
+        <label for="name-input">이름 석 자, 아니 닉네임을 알려주시오</label>
+        <input id="name-input" type="text" maxlength="12" placeholder="예) 존버왕개미" autocomplete="off" required>
+        <button type="submit" class="btn primary">테스트 시작하기 →</button>
+        <p class="hint">20문항 · 약 3분</p>
+      </form>
+    </section>
+
+    <!-- 문항 화면 -->
+    <section id="screen-quiz" class="screen">
+      <div class="quiz-top">
+        <button class="btn icon" id="btn-back" aria-label="이전 문항">←</button>
+        <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+        <span class="progress-text" id="progress-text">1/20</span>
+      </div>
+      <div class="question-wrap">
+        <p class="q-num" id="q-num">Q1</p>
+        <h2 class="q-text" id="q-text"></h2>
+        <div class="options">
+          <button class="option" id="opt-0"></button>
+          <button class="option" id="opt-1"></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결과 화면: 장터에 붙은 방 -->
+    <section id="screen-result" class="screen">
+      <article class="report">
+        <header class="report-head">
+          <span class="title">동학개미 투자 성향</span>
+          <span class="no" id="report-no"></span>
+        </header>
+
+        <div class="report-hero" id="report-hero">
+          <div class="result-char" id="result-char"></div>
+          <p class="result-owner" id="result-owner"></p>
+          <h2 class="result-name" id="result-name"></h2>
+        </div>
+
+        <div class="report-body">
+          <div class="quote-box">
+            <span class="quote-label">제일 많이 하는 말</span>
+            <blockquote class="result-quote" id="result-quote"></blockquote>
+          </div>
+          <p class="result-desc" id="result-desc"></p>
+        </div>
+
+        <!-- 여기서부터는 조선 이야기가 아닌 실제 투자 성향 분석 -->
+        <div class="analysis">
+          <h3 class="analysis-title">지금 나의 진짜 투자 성향은</h3>
+
+          <section class="style-box">
+            <h3>투자 스타일</h3>
+            <p class="style-name" id="result-style"></p>
+            <ul id="style-desc"></ul>
+          </section>
+
+          <section class="block">
+            <h3><em>01</em>매매 습관</h3>
+            <ul id="result-trade"></ul>
+          </section>
+          <section class="block">
+            <h3><em>02</em>투자 멘탈</h3>
+            <ul id="result-mental"></ul>
+          </section>
+          <section class="block">
+            <h3><em>03</em>계좌 특징</h3>
+            <ul id="result-account"></ul>
+          </section>
+
+          <div class="verdict">
+            <section class="note good-note">
+              <h4>강점</h4>
+              <p id="result-strength"></p>
+            </section>
+            <section class="note warn-note">
+              <h4>주의할 점</h4>
+              <p id="result-caution"></p>
+            </section>
+          </div>
+          <section class="advice">
+            <h4>이렇게 해 보세요</h4>
+            <p id="result-tip"></p>
+          </section>
+        </div>
+      </article>
+
+      <h3 class="match-heading">같이 투자하면?</h3>
+      <div class="match-grid">
+        <article class="match good" id="match-good"></article>
+        <article class="match bad" id="match-bad"></article>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="btn-share">결과 공유하기</button>
+        <button class="btn ghost" id="btn-retry">다시 하기</button>
+      </div>
+    </section>
+
+    <div class="toast" id="toast"></div>
+  </main>
+
+  <footer>재미로 보는 성향 테스트예요 · 투자 판단과 책임은 본인에게 있습니다</footer>
+
+  <script src="data.js?v=19"></script>
+  <script src="characters.js?v=19"></script>
+  <script src="app.js?v=19"></script>
+</body>
+</html>
